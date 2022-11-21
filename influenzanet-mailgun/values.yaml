@@ -1,2 +1,2 @@
-image: [dockerhub-repo]/mailgun-webhook
-endpoint: [endpoint-url-path]
+image: "influweb/mailgun-webhook:v1"
+endpoint: "{{ .Values.mailgunEndpoint }}"

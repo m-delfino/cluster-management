@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: maintenance-page
-  namespace: {{ $.Values.namespace }}
+  namespace: "maintenance"
   labels:
     app: maintenance-page
 spec:
@@ -30,7 +30,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: maintenance-service
-  namespace: {{ $.Values.namespace }}
+  namespace: "maintenance"
 spec:
   type: NodePort
   selector:

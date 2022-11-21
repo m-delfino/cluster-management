@@ -1,16 +1,16 @@
-# Default values for influenzanet-2.0.
+# Default values for influenzanet
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-platformName: "Influenzanet"
-contactEmail: "support@localhost"
+platformName: "Influweb"
+contactEmail: "support@influweb.org"
 
-namespace: case
+namespace: italy
 
 basicAuth:
   enabled: false
-  username: "user"
-  password: "password"
+  username: ""
+  password: ""
 
 ####
 # Global flags
@@ -23,7 +23,7 @@ dbNamePrefix: ''
 useRecaptcha: true
 
 # Replace this with the domain name for Influenzanet Application
-domain: example.com
+domain: influweb.org
 
 ingress:
   enabled: true
@@ -33,10 +33,16 @@ ingress:
 
 # Replace this with a list of domains to be included in the certificate
 tlsDomains:
-  - example.com
+  - influweb.org
+  - www.influweb.org
+  - influweb.net
+  - www.influweb.net
+  - influweb.it
+  - www.influweb.it
 
 redirectDomains:
-  - subdomain.example.com
+  - influweb.net
+  - influweb.it
 
 participantApiPath: "/api"
 managementApiPath: "/admin"
@@ -46,26 +52,23 @@ managementApiPath: "/admin"
 issuerType: acme
 
 # Cluster issuer Name
-clusterIssuer : "letsencrypt"
-acmeServer: https://acme-v02.api.letsencrypt.org/directory
-acmeEmail: user.name@domain.com
+clusterIssuer : "letsencrypt-prod-site"
+acmeServer: "https://acme-v02.api.letsencrypt.org/directory"
+acmeEmail: "daniela.paolotti@gmail.com"
 
 # Name of the secret used to store the generated certificat will be stored
 tlsSecretName: 'site-tls-web'
 
 # In case of issuerType 'ca' put here the name of the secret containing the ca certificate and key, leave empty for acme
-CAIssuerSecretName: 'ca-issuer-secret'
+CAIssuerSecretName: ''
 
 # Secrets Configuration Section
 
 # JSON Web Token secret key (32 bytes random, base64 encoded). 
 jwtKey: ""
 mongoUsername: "admin"
-mongoPassword: "abc123"
+mongoPassword: ""
 mongoConnectionPrefix: ""
-
-# The actual value given by google is expected here
-googleRecaptchaKey: ""
 
 # studyGlobalSecret, used together with a study secretKey to compute a
 # participantID from a profileID, should be a string with high entropy
@@ -78,33 +81,29 @@ createStorageClass: true
 # Email service SMTP configuration
 ## Regular Email Server
 smtpServers:
-  from: "username@email.com"
-  sender: username@email.com
-  replyTo:
-    - username@email.com
+  from: "Influweb <no-reply@influweb.org>"
+  sender: "Influweb <no-reply@influweb.org>"
   servers:
-    - host: smtp.gmail.com
-      port: 465
-      connections: 2
+    - host: smtp.eu.mailgun.org
+      port: 587
+      connections: 1
       sendTimeout: 5
       auth:
-        user: username@email.com
-        password: "password" 
+        user: postmaster@influweb.org
+        password: "{{ .Values.smtpPassword }}"
 
 ## High Priority email server
 prioSmtpServers:
-  from: "username@email.com"
-  sender: username@email.com
-  replyTo:
-    - username@email.com
+  from: "Influweb <no-reply@influweb.org>"
+  sender: "Influweb <no-reply@influweb.org>"
   servers:
-    - host: smtp.gmail.com
-      port: 465
-      connections: 2
+    - host: smtp.eu.mailgun.org
+      port: 587
+      connections: 1
       sendTimeout: 5
       auth:
-        user: username@email.com
-        password: "password" 
+        user: postmaster@influweb.org
+        password: "{{ .Values.smtpPassword }}"
 
 globalDb:
   dbConnexionStr: mongo-atlas-service:27017
@@ -126,7 +125,7 @@ userDB:
 svcWebParticipant:
     name: web-client
     replicas: 1
-    image: influenzanet/participant-webapp:v0.0.1
+    image:  influweb/participant-webapp:v2.2
     imagePullPolicy: IfNotPresent
     containerPort: 3100
     serviceName: web-client-service
@@ -134,7 +133,7 @@ svcWebParticipant:
 # EMAIL CLIENT #
 svcEmailClient:
   name: email-client
-  image: influenzanet/email-client-service-image:v0.9.3
+  image: influenzanet/email-client-service-image:v1.1.1
   imagePullPolicy: IfNotPresent
   replicas: 1
   containerPort: 5005
@@ -155,19 +154,19 @@ svcLogging:
 #  MANAGEMENT API #
 svcManagementApi:
   name: management-api
-  image: influenzanet/management-api-image:v0.15.1
+  image: influenzanet/management-api-image:v1.1.1
   imagePullPolicy: IfNotPresent
   containerPort: 3232      
-  corsAllowOrigins: 'https://tofudumplings.com,http://tofudumplings.com'
+  corsAllowOrigins: "https://influweb.org,http://influweb.org"
   debugMode: "false"
   serviceName: management-api-service
 
 svcParticipantApi:
   name: participant-api
-  image: influenzanet/participant-api-image:v0.15.1
+  image: influenzanet/participant-api-image:v1.1.1
   imagePullPolicy: IfNotPresent
   containerPort: 3231
-  corsAllowOrigins: 'https://tofudumplings.com,http://tofudumplings.com'
+  corsAllowOrigins: "https://influweb.org,http://influweb.org"
   debugMode: "false"
   useDeleteEndpoint: true
   disableSignupEndpoint: false
@@ -177,7 +176,7 @@ svcParticipantApi:
 SvcMessageScheduler:
   name: messaging-scheduler
   replicas: 1
-  image: influenzanet/messaging-scheduler-image:v0.9.3
+  image: influenzanet/messaging-scheduler-image:v1.1.1
   imagePullPolicy: IfNotPresent
   containerPort: 5009
   serviceName: messaging-scheduler-service
@@ -194,7 +193,7 @@ SvcMessageScheduler:
 svcMessaging:
   name: messaging
   replicas: 1
-  image: influenzanet/messaging-service-image:v0.9.3
+  image: influenzanet/messaging-service-image:v1.1.1
   imagePullPolicy: IfNotPresent
   containerPort: 5004
   serviceName: messaging-service
@@ -208,7 +207,7 @@ svcMongoDb:
   replicas: 1
   # NOTE: if using 'IfNotPresent' pull policy, do not use 'latest' as image version in
   # order to prevent unwanted updates when the pod is recreated
-  image: mongo:5.0
+  image: mongo:6.0.2
   imagePullPolicy: IfNotPresent
   # Secret used to create the ROOT password, should have 'username' & password entry
   dbSecretName: case-mongodb-atlas
@@ -220,7 +219,7 @@ svcMongoDb:
   # Set this field for associating a pre-existing volume to the claim, leaving
   # an empty string will default to dynamic provisioning and create a random
   # name for the volume
-  volumeName: ""
+  volumeName: "database-pv"
   # Storage class name to use for the MongoDb 
   storageClass: influenzanet-storage
   accessModes:
@@ -235,7 +234,7 @@ svcMongoDb:
 
 svcStudyService:
   name: study
-  image: influenzanet/study-service-image:v0.16.2
+  image: influenzanet/study-service-image:v1.1.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   serviceName: study-service
@@ -250,7 +249,7 @@ svcStudyService:
 # USER MANAGEMENT SERVICE #
 svcUserManagement:
   name: user-management
-  image: influenzanet/user-management-image:v0.20.4
+  image: influenzanet/user-management-image:v1.0.0
   imagePullPolicy: IfNotPresent
   replicas: 1
   serviceName: "user-management-service"

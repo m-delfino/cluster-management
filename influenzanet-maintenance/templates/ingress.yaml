@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-maintenance
-  namespace: {{ .Values.namespace }}
+  namespace: "maintenance"
   annotations:
     nginx.ingress.kubernetes.io/server-snippet: |
 
@@ -24,7 +24,7 @@ metadata:
 
       location @errorpage {
         proxy_set_header X-Code $status;
-        proxy_pass http://maintenance-service.{{ .Values.namespace }}.svc.cluster.local:3100;
+        proxy_pass http://maintenance-service.maintenance.svc.cluster.local:3100;
       }
 spec:
   ingressClassName: nginx

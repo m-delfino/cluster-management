@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: maintenance-config
-  namespace: {{ $.Values.namespace }}
+  namespace: "maintenance"
 data:
   default.conf: |
     server {
