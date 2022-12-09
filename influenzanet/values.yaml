@@ -127,7 +127,7 @@ userDB:
 svcWebParticipant:
     name: web-client
     replicas: 1
-    image:  influweb/participant-webapp:v2.2
+    image:  influweb/participant-webapp:v2.3
     imagePullPolicy: IfNotPresent
     containerPort: 3100
     serviceName: web-client-service
