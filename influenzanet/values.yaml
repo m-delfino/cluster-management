@@ -43,6 +43,8 @@ tlsDomains:
 redirectDomains:
   - influweb.net
   - influweb.it
+  - www.influweb.net
+  - www.influweb.it
 
 participantApiPath: "/api"
 managementApiPath: "/admin"
