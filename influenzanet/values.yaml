@@ -83,7 +83,7 @@ smtpServers:
       connections: 1
       sendTimeout: 5
       auth:
-        user: postmaster@influweb.org
+        user: "{{ .Values.smtpUser }}"
         password: "{{ .Values.smtpPassword }}"
 
 ## High Priority email server
@@ -96,7 +96,7 @@ prioSmtpServers:
       connections: 1
       sendTimeout: 5
       auth:
-        user: postmaster@influweb.org
+        user: "{{ .Values.smtpUser }}"
         password: "{{ .Values.smtpPassword }}"
 
 ##
