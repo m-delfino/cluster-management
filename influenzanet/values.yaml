@@ -164,7 +164,7 @@ svcWebParticipant:
     name: web-client
     replicas: 1
     image:  influweb/participant-webapp:v2.5-staging
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     containerPort: 3100
     serviceName: web-client-service
     # use these for attaching extra volumes to the pods
