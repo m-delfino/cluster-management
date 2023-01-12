@@ -1,86 +1,78 @@
 # Default values for influenzanet
 # This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
 
+##
+# Platform description
+##
+
+namespace: italy
 platformName: "Influweb"
 contactEmail: "support@influweb.org"
 
-namespace: italy
-
-basicAuth:
-  enabled: false
-  username: ""
-  password: ""
-
-####
-# Global flags
-####
-
-# Common prefix for database names (use for multitenant db)
-dbNamePrefix: ''
-
-# Use Google Recaptcha, if true the secret googleRecaptchaKey should be defined too
-useRecaptcha: true
-
-# Replace this with the domain name for Influenzanet Application
-domain: influweb.org
+##
+# External access configuration
+##
 
 ingress:
+  # if false no ingress will be created for external access
   enabled: true
-  name: ingress-web
-  # Use a simplified Ingress configuration (with wildcard path instead of specific)
-  simplified: true
+  name: "ingress-web"
 
-# Replace this with a list of domains to be included in the certificate
-tlsDomains:
-  - influweb.org
-  - www.influweb.org
-  - influweb.net
-  - www.influweb.net
-  - influweb.it
-  - www.influweb.it
+# Replace this with the main domain name for Influenzanet Application
+domain: influweb.org
 
+# Additional domains to redirect to the main domain
 redirectDomains:
   - influweb.net
   - influweb.it
   - www.influweb.net
   - www.influweb.it
 
+# API endpoints
 participantApiPath: "/api"
 managementApiPath: "/admin"
 
-# TLS Certificate Issuer Section
-# issuerType 'acme', 'ca' 
-issuerType: acme
+##
+# TLS configuration
+##
 
-# Cluster issuer Name
+# Additional domains to be included in the TLS certificate *in addition* to
+# 'domain' and 'redirectDomains'
+tlsDomains:
+  - www.{{ .Values.domain }}
+
+# TLS issuerType 'acme', 'ca'
+issuerType: "acme"
+
+# If issuerType: 'acme'
 clusterIssuer : "letsencrypt-prod-site"
 acmeServer: "https://acme-v02.api.letsencrypt.org/directory"
 acmeEmail: "daniela.paolotti@gmail.com"
-
-# Name of the secret used to store the generated certificat will be stored
+# Name of the secret used to store the generated certificate
 tlsSecretName: 'site-tls-web'
 
-# In case of issuerType 'ca' put here the name of the secret containing the ca certificate and key, leave empty for acme
+# If issuerType: 'ca', put here the name of the secret containing the CA
+# certificate and key, leave empty if using 'acme'
 CAIssuerSecretName: ''
 
-# Secrets Configuration Section
+##
+# Basic auth and anti-spam protection
+##
 
-# JSON Web Token secret key (32 bytes random, base64 encoded). 
-jwtKey: ""
-mongoUsername: "admin"
-mongoPassword: ""
-mongoConnectionPrefix: ""
+basicAuth:
+  enabled: false
+  username: ""
+  password: ""
+  excludePaths: []
 
-# studyGlobalSecret, used together with a study secretKey to compute a
-# participantID from a profileID, should be a string with high entropy
-studyGlobalSecret: ""
+# Use Google Recaptcha for protecting the registration dialog from spammers, if
+# true the secret googleRecaptchaKey must also be defined
+useRecaptcha: true
 
-# Persistant Storage Section
-# Create a dedicated storage class (can be removed if your cluster already provides it)
-createStorageClass: true
+##
+# SMTP configuration for outgoing emails
+##
 
-# Email service SMTP configuration
 ## Regular Email Server
 smtpServers:
   from: "Influweb <no-reply@influweb.org>"
@@ -107,30 +99,77 @@ prioSmtpServers:
         user: postmaster@influweb.org
         password: "{{ .Values.smtpPassword }}"
 
-globalDb:
-  dbConnexionStr: mongo-atlas-service:27017
-  dbSecretName: case-mongodb-atlas
+##
+# Platform secrets
+##
 
-messageDB:
-  dbConnexionStr: mongo-atlas-service:27017
-  dbSecretName: case-mongodb-atlas
+jwtKey: ""
+mongoUsername: ""
+mongoPassword: ""
+# The actual secret key value provided by Google is expected here
+googleRecaptchaKey: ""
+# studyGlobalSecret is used together with the secretKey associated to a specific
+# study to compute a participantID from a profileID, should be a string with
+# high entropy
+studyGlobalSecret: ""
 
-studyDB:
-  dbConnexionStr: mongo-atlas-service:27017
-  dbSecretName: case-mongodb-atlas
+##
+# MongoDB service configuration
+##
 
-userDB:
-  dbConnexionStr: mongo-atlas-service:27017
-  dbSecretName: case-mongodb-atlas
+svcMongoDb:
+  # if disabled no volume allocation will take place
+  enabled: true
+  name: mongo
+  serviceName: mongo-atlas-service
+  replicas: 1
+  # NOTE: if using 'IfNotPresent' pull policy, do not use 'latest' as image version in
+  # order to prevent unwanted updates when the pod is recreated
+  image: mongo:6.0.2
+  imagePullPolicy: IfNotPresent
+  containerPort: 27017
+  # If false the service will be assigned to NodePort instead of ClusterIp
+  headless: true
+  # Name of the pv to create
+  pvClaimName: database-pv-claim
+  # Set this field for associating a pre-existing volume to the claim, leaving
+  # an empty string will default to dynamic provisioning and create a new volume
+  # with a random name
+  volumeName: "database-pv"
+  # Storage class to use for the associated persistent volume. If equal to
+  # 'influenzanet-storage' a new GKE-specific storage class defined in
+  # templates/storageClass.yaml will be used.
+  storageClass: 'influenzanet-storage'
+  accessModes:
+    - ReadWriteOnce
+  # Size of the requested storage
+  storageRequested: 50Gi
+  # Path to mount in the container to the data directory (can depends on the image used)
+  # For bitnami use /bitnami/mongodb
+  dbDataPath: /data/db
+
+# Point this to your custom instance if you chose not to enable the internal MongoDB service
+dbConnectionStr: "{{ .Values.svcMongoDb.serviceName }}:{{ .Values.svcMongoDb.containerPort }}"
+# Common prefix for database names (use for multitenant db)
+dbNamePrefix: ""
+dbConnectionPrefix: ""
+dbSecretName: "case-mongodb-atlas"
+
+##
+# Influenzanet microservices configuration
+##
 
 # PARTICIPANT WEBAPP
 svcWebParticipant:
     name: web-client
     replicas: 1
-    image:  influweb/participant-webapp:v2.4
+    image: influweb/participant-webapp:v2.4
     imagePullPolicy: IfNotPresent
     containerPort: 3100
     serviceName: web-client-service
+    # use these for attaching extra volumes to the pods
+    extraVolumeMounts: []
+    extraVolumes: []
 
 # EMAIL CLIENT #
 svcEmailClient:
@@ -141,7 +180,7 @@ svcEmailClient:
   containerPort: 5005
   serviceName: email-client-service
   configMapName: email-server-config
-  
+
 # LOGGING SERVICE #
 svcLogging:
   name: logging
@@ -150,8 +189,6 @@ svcLogging:
   imagePullPolicy: IfNotPresent
   containerPort: 5006
   serviceName: logging-service
-  dbSecretName: case-mongodb-atlas
-  dbConnexionStr: mongo-atlas-service:27017
 
 #  MANAGEMENT API #
 svcManagementApi:
@@ -159,22 +196,23 @@ svcManagementApi:
   image: influenzanet/management-api-image:v1.1.1
   imagePullPolicy: IfNotPresent
   containerPort: 3232      
-  corsAllowOrigins: "https://influweb.org,http://influweb.org"
+  corsAllowOrigins: 'https://{{ .Values.domain }},http://{{ .Values.domain }}'
   debugMode: "false"
   serviceName: management-api-service
 
+# PARTICIPANT API #
 svcParticipantApi:
   name: participant-api
   image: influenzanet/participant-api-image:v1.1.1
   imagePullPolicy: IfNotPresent
   containerPort: 3231
-  corsAllowOrigins: "https://influweb.org,http://influweb.org"
+  corsAllowOrigins: 'https://{{ .Values.domain }},http://{{ .Values.domain }}'
   debugMode: "false"
   useDeleteEndpoint: true
   disableSignupEndpoint: false
-  recaptchaSecretName: recaptcha-collection
   serviceName: participant-api-service
-  
+
+# MESSAGE SCHEDULER #
 SvcMessageScheduler:
   name: messaging-scheduler
   replicas: 1
@@ -202,38 +240,7 @@ svcMessaging:
   dbTimeout: 30
   dbIdleTimeout: 46
 
-svcMongoDb:
-  enabled: true
-  name: mongo
-  serviceName: mongo-atlas-service
-  replicas: 1
-  # NOTE: if using 'IfNotPresent' pull policy, do not use 'latest' as image version in
-  # order to prevent unwanted updates when the pod is recreated
-  image: mongo:6.0.2
-  imagePullPolicy: IfNotPresent
-  # Secret used to create the ROOT password, should have 'username' & password entry
-  dbSecretName: case-mongodb-atlas
-  containerPort: 27017
-  # If false the service will be assigned to NodePort instead of clusterIp
-  headless: true
-  # Name of the pv to create
-  pvClaimName: database-pv-claim
-  # Set this field for associating a pre-existing volume to the claim, leaving
-  # an empty string will default to dynamic provisioning and create a random
-  # name for the volume
-  volumeName: "database-pv"
-  # Storage class name to use for the MongoDb 
-  storageClass: influenzanet-storage
-  accessModes:
-    - ReadWriteOnce
-  # Size of the requested storage
-  storageRequested: 50Gi
-  # Path to mount in the container to the data directory (can depends on the image used)
-  # For bitnami use /bitnami/mongodb
-  dbDataPath: /data/db
-  envRootUserName: MONGO_INITDB_ROOT_USERNAME
-  envRootPasswordName: MONGO_INITDB_ROOT_PASSWORD
-
+# STUDY SERVICE #
 svcStudyService:
   name: study
   image: influenzanet/study-service-image:v1.1.0
@@ -246,7 +253,6 @@ svcStudyService:
   timerEventFrequency: 86400
   timerEventCheckIntervalMin: 3600
   timerEventCheckIntervalVar: 900
-  globalSecretName: study-global-secret
 
 # USER MANAGEMENT SERVICE #
 svcUserManagement:
@@ -258,13 +264,9 @@ svcUserManagement:
   containerPort: 5002
   dbTimeout: 30
   dbIdleTimeout: 46
-  
   # JWT Tokens
   # Token expiration time in Minute
   tokenExpiration: 5
-  
-  # Name of the secret containing the jwt secret key
-  jwtSecretName: jwt-collection
   # Maximum number of new created accounts, during the signupRateLimitWindow (5 minutes)
   newUserRateLimit: 100
   # Delay (seconds) after which to cleanup user account when it has not been verified
@@ -277,3 +279,14 @@ svcUserManagement:
   sendReminderToUnverifiedUserAfter: "1290000"
   # Lifetime in seconds for verification code of a new account. Default is 15 minutes
   verificationCodeLifetime: 900
+
+  # Lifetime of the invitation token, can be integer (as hours) or value + unit (s,m,h) e.g. '10h'. Default 168h (7days)
+  tokenInvitationLifetime: "168h"
+
+  # Lifetime of the contact verification token, integer (as hours) or value+ unit (s,m,h), Default "720h" (30 days)
+  tokenContactVerificationLifetime: "720h"
+
+  # Weight of each weekday (weight=0 day non assigned)
+  # Values: mon=, tue=, wed=, thu=, fri, sat=, sun=
+  # Default is empty (use uniform for all week days, i.e. weight=1 for each)
+  weekdayAssignationWeights: ""
