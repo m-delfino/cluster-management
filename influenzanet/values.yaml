@@ -75,8 +75,8 @@ useRecaptcha: true
 
 ## Regular Email Server
 smtpServers:
-  from: "Influweb <no-reply@influweb.org>"
-  sender: "Influweb <no-reply@influweb.org>"
+  from: "{{ .Values.smtpEmail }}"
+  sender: "{{ .Values.smtpEmail }}"
   servers:
     - host: smtp.eu.mailgun.org
       port: 587
@@ -88,8 +88,8 @@ smtpServers:
 
 ## High Priority email server
 prioSmtpServers:
-  from: "Influweb <no-reply@influweb.org>"
-  sender: "Influweb <no-reply@influweb.org>"
+  from: "{{ .Values.smtpEmail }}"
+  sender: "{{ .Values.smtpEmail }}"
   servers:
     - host: smtp.eu.mailgun.org
       port: 587
@@ -163,7 +163,7 @@ dbSecretName: "case-mongodb-atlas"
 svcWebParticipant:
     name: web-client
     replicas: 1
-    image: influweb/participant-webapp:v2.4
+    image:  influweb/participant-webapp:v2.5-staging
     imagePullPolicy: IfNotPresent
     containerPort: 3100
     serviceName: web-client-service
